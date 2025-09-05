@@ -53,7 +53,7 @@ $branchName = $_SESSION['branch_name'];
       <option value="entregado">Entregados</option>
       <option value="cancelado">Cancelados</option>
     </select>
-    <button class="btn btn-sm btn-secondary" onclick="loadOrders()">🔄</button>
+    <button class="btn btn-sm btn-secondary" onclick="connectStream()">🔄</button>
   </div>
 
   <!-- Pedidos -->
@@ -62,6 +62,7 @@ $branchName = $_SESSION['branch_name'];
 
 <script>
 const branchId = <?= $branchId ?>;
+let eventSource;
 
 function renderStatusBadge(status) {
   const colors = {
@@ -81,38 +82,43 @@ function renderStatusBadge(status) {
   return `<span class="badge bg-${colors[status]||'dark'}">${labels[status]||status}</span>`;
 }
 
-function loadOrders() {
-  const status = document.getElementById("filterStatus").value;
-  fetch(`/orders?branch_id=${branchId}&status=${status}`)
-    .then(r=>r.json())
-    .then(res=>{
-      const list = document.getElementById("ordersList");
-      list.innerHTML = "";
-      (res.data||res).forEach(o=>{
-        list.innerHTML += `
-          <div class="col-12">
-            <div class="card shadow-sm order-card status-${o.status}">
-              <div class="card-body">
-                <div class="d-flex justify-content-between">
-                  <h6>#${o.id} ${renderStatusBadge(o.status)}</h6>
-                  <small>${o.created_at}</small>
-                </div>
-                <p class="mb-1"><strong>Mesa:</strong> ${o.table_number || 'N/A'}</p>
-                <p class="mb-1"><strong>Cliente:</strong> ${o.customer_name || 'N/A'}</p>
-                <p class="mb-2"><strong>Total:</strong> RD$ ${parseFloat(o.total||0).toFixed(2)}</p>
-                <div class="d-flex gap-2">
-                  ${renderButtons(o)}
-                </div>
-              </div>
+function renderOrders(res) {
+  const list = document.getElementById("ordersList");
+  list.innerHTML = "";
+  (res.data||res).forEach(o=>{
+    list.innerHTML += `
+      <div class="col-12">
+        <div class="card shadow-sm order-card status-${o.status}">
+          <div class="card-body">
+            <div class="d-flex justify-content-between">
+              <h6>#${o.id} ${renderStatusBadge(o.status)}</h6>
+              <small>${o.created_at}</small>
+            </div>
+            <p class="mb-1"><strong>Mesa:</strong> ${o.table_number || 'N/A'}</p>
+            <p class="mb-1"><strong>Cliente:</strong> ${o.customer_name || 'N/A'}</p>
+            <p class="mb-2"><strong>Total:</strong> RD$ ${parseFloat(o.total||0).toFixed(2)}</p>
+            <div class="d-flex gap-2">
+              ${renderButtons(o)}
             </div>
           </div>
-        `;
-      });
-    })
-    .catch(err=>{
-      Swal.fire("Error", "No se pudieron cargar pedidos", "error");
+        </div>
+      </div>
+    `;
+  });
+}
+
+function connectStream() {
+  const status = document.getElementById("filterStatus").value;
+  if (eventSource) eventSource.close();
+  eventSource = new EventSource(`/orders/stream?branch_id=${branchId}&status=${status}`);
+  eventSource.onmessage = (e) => {
+    try {
+      const data = JSON.parse(e.data);
+      renderOrders(data);
+    } catch(err) {
       console.error(err);
-    });
+    }
+  };
 }
 
 function renderButtons(order) {
@@ -137,16 +143,16 @@ function changeStatus(id, status) {
     method: "PUT",
     headers: { "Content-Type":"application/json" },
     body: JSON.stringify({ status })
-  }).then(()=> loadOrders());
+  }).then(()=> connectStream());
 }
 
 function cancelOrder(id) {
   fetch(`/orders/cancel?id=${id}`, { method:"PUT" })
-    .then(()=> loadOrders());
+    .then(()=> connectStream());
 }
 
-loadOrders();
-setInterval(loadOrders, 5000); // refresco cada 5s
+connectStream();
+document.getElementById("filterStatus").addEventListener("change", connectStream);
 </script>
 </body>
 </html>

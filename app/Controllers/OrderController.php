@@ -104,4 +104,33 @@ class OrderController {
             echo json_encode(["error" => "No se pudo cancelar"]);
         }
     }
+
+    // ================== STREAMING ==================
+
+    // GET /orders/stream?branch_id=1&status=pending
+    public function stream() {
+        if (!isset($_GET['branch_id'])) {
+            http_response_code(400);
+            echo "branch_id required";
+            return;
+        }
+
+        $branchId = intval($_GET['branch_id']);
+        $status   = $_GET['status'] ?? null;
+
+        header('Content-Type: text/event-stream');
+        header('Cache-Control: no-cache');
+        header('Connection: keep-alive');
+
+        while (true) {
+            $orders = $this->model->getByBranch($branchId, $status);
+            echo 'data: ' . json_encode(['data' => $orders]) . "\n\n";
+            @ob_flush();
+            flush();
+            if (connection_aborted()) {
+                break;
+            }
+            sleep(3);
+        }
+    }
 }
