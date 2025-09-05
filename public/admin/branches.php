@@ -5,6 +5,14 @@ $active = "branches";
 ob_start();
 ?>
 
+<style>
+  .qr-preview {
+    width: 60px;
+    height: 60px;
+    object-fit: cover;
+  }
+</style>
+
 <div class="d-flex justify-content-between align-items-center mb-4">
   <h3 class="mb-0">🏢 Gestión de Sucursales</h3>
   <button class="btn btn-primary" onclick="showBranchModal()">+ Nueva Sucursal</button>

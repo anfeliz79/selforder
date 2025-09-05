@@ -133,7 +133,12 @@ function renderTables(tables) {
     const row = `
       <tr>
         <td>${t.table_number}</td>
-        <td>${t.qr_code ? `<a href="${t.qr_code}" target="_blank">Ver QR</a>` : ''}</td>
+        <td>${t.qr_code ? `
+            <div class="d-flex flex-column align-items-center">
+              <img src="${t.qr_code}" alt="QR" class="qr-preview" />
+              <a href="${t.qr_code}" download>Descargar</a>
+            </div>
+          ` : ''}</td>
         <td>
           <button class="btn btn-sm btn-outline-primary me-1" onclick="editTable(this.closest('tr'), ${t.id})">✏️</button>
           <button class="btn btn-sm btn-outline-danger" onclick="deleteTable(${t.id})">🗑️</button>
