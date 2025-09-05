@@ -34,7 +34,8 @@ class BranchController {
         }
 
         try {
-            $success = $this->model->create($data['name'], $data['address'], $data['phone'], $data['access_key']);
+            $hashedKey = password_hash($data['access_key'], PASSWORD_DEFAULT);
+            $success = $this->model->create($data['name'], $data['address'], $data['phone'], $hashedKey);
             echo json_encode(["success"=>$success, "message"=>"Sucursal creada correctamente"]);
         } catch (Exception $e) {
             http_response_code(500);
@@ -53,7 +54,8 @@ class BranchController {
         }
 
         try {
-            $success = $this->model->update($data['id'], $data['name'], $data['address'], $data['phone'], $data['access_key']);
+            $hashedKey = password_hash($data['access_key'], PASSWORD_DEFAULT);
+            $success = $this->model->update($data['id'], $data['name'], $data['address'], $data['phone'], $hashedKey);
             echo json_encode(["success"=>$success, "message"=>"Sucursal actualizada correctamente"]);
         } catch (Exception $e) {
             http_response_code(500);

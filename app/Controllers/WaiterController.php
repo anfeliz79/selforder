@@ -41,13 +41,14 @@ class WaiterController {
             exit;
         }
 
-        if (!isset($branch['access_key']) || $branch['access_key'] !== $password) {
+        if (!isset($branch['access_key']) || !password_verify($password, $branch['access_key'])) {
             $_SESSION['error'] = "Clave incorrecta";
             header("Location: /waiter/login.php");
             exit;
         }
 
         // Guardar sesión
+        session_regenerate_id(true);
         $_SESSION['branch_id']   = $branch['id'];
         $_SESSION['branch_name'] = $branch['name'];
 
