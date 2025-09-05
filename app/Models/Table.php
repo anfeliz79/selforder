@@ -28,7 +28,7 @@ class Table {
                   VALUES (:branch_id, :table_number, :qr_code)";
         $stmt = $this->conn->prepare($query);
         $stmt->bindParam(":branch_id", $branchId, PDO::PARAM_INT);
-        $stmt->bindParam(":table_number", $tableNumber);
+        $stmt->bindParam(":table_number", $tableNumber, PDO::PARAM_STR);
         $stmt->bindParam(":qr_code", $qrCode);
         return $stmt->execute();
     }
@@ -41,7 +41,7 @@ class Table {
         $stmt = $this->conn->prepare($query);
         $stmt->bindParam(":id", $id, PDO::PARAM_INT);
         $stmt->bindParam(":branch_id", $branchId, PDO::PARAM_INT);
-        $stmt->bindParam(":table_number", $tableNumber);
+        $stmt->bindParam(":table_number", $tableNumber, PDO::PARAM_STR);
         $stmt->bindParam(":qr_code", $qrCode);
         return $stmt->execute();
     }
