@@ -57,6 +57,12 @@ switch ($uri) {
         }
         break;
 
+    case '/orders/stream':
+        if ($method === 'GET') {
+            (new OrderController())->stream();
+        }
+        break;
+
     // 🔹 Customers
     case '/customers':
         if ($method === 'POST') {
