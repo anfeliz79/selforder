@@ -148,7 +148,7 @@ function addTableRow() {
   const tbody = $('#tablesTable tbody');
   const row = `
     <tr>
-      <td><input type="number" class="form-control" placeholder="#" /></td>
+      <td><input type="text" class="form-control" placeholder="Identificador" /></td>
       <td></td>
       <td>
         <button class="btn btn-sm btn-success me-1" onclick="saveTable(this.closest('tr'))">💾</button>
@@ -162,7 +162,7 @@ function addTableRow() {
 function editTable(row, id) {
   const number = $(row).find('td:first').text();
   $(row).html(`
-    <td><input type="number" class="form-control" value="${number}" /></td>
+    <td><input type="text" class="form-control" value="${number}" /></td>
     <td></td>
     <td>
       <button class="btn btn-sm btn-success me-1" onclick="saveTable(this.closest('tr'), ${id})">💾</button>
@@ -172,15 +172,15 @@ function editTable(row, id) {
 }
 
 function saveTable(row, id) {
-  const number = $(row).find('input').val();
+  const tableNumber = $(row).find('input').val().trim();
   const branchId = $('#tablesBranchId').val();
 
-  if (!number) {
+  if (!tableNumber) {
     Swal.fire('Error', 'Número de mesa requerido', 'warning');
     return;
   }
 
-  const payload = { branch_id: branchId, table_number: number };
+  const payload = { branch_id: branchId, table_number: tableNumber };
   if (id) payload.id = id;
 
   fetch('/tables', {
