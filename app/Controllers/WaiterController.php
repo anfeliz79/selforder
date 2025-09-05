@@ -16,7 +16,7 @@ class WaiterController {
     // 🔹 Página de login
     public function loginPage() {
         if (isset($_SESSION['branch_id'])) {
-            header("Location: /waiter/orders.php");
+            header("Location: /waiter/orders");
             exit;
         }
         include __DIR__ . "/../../public/waiter/login.php";
@@ -29,7 +29,7 @@ class WaiterController {
 
         if (!$branchId || !$password) {
             $_SESSION['error'] = "Debes seleccionar sucursal y clave";
-            header("Location: /waiter/login.php");
+            header("Location: /waiter/login");
             exit;
         }
 
@@ -37,28 +37,29 @@ class WaiterController {
 
         if (!$branch) {
             $_SESSION['error'] = "Sucursal no encontrada";
-            header("Location: /waiter/login.php");
+            header("Location: /waiter/login");
             exit;
         }
 
         if (!isset($branch['access_key']) || $branch['access_key'] !== $password) {
             $_SESSION['error'] = "Clave incorrecta";
-            header("Location: /waiter/login.php");
+            header("Location: /waiter/login");
             exit;
         }
 
         // Guardar sesión
         $_SESSION['branch_id']   = $branch['id'];
         $_SESSION['branch_name'] = $branch['name'];
+        session_write_close();
 
-        header("Location: /waiter/orders.php");
+        header("Location: /waiter/orders");
         exit;
     }
 
     // 🔹 Página de pedidos
     public function ordersPage() {
         if (!isset($_SESSION['branch_id'])) {
-            header("Location: /waiter/login.php");
+            header("Location: /waiter/login");
             exit;
         }
         include __DIR__ . "/../../public/waiter/orders.php";
@@ -68,7 +69,7 @@ class WaiterController {
     public function logout() {
         session_start();
         session_destroy();
-        header("Location: /waiter/login.php");
+        header("Location: /waiter/login");
         exit;
     }
 }

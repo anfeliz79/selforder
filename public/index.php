@@ -111,6 +111,11 @@ case '/waiter/login':
     if ($method === 'GET') $controller->loginPage();
     elseif ($method === 'POST') $controller->login();
     break;
+
+case '/waiter/orders':
+    $controller = new WaiterController();
+    if ($method === 'GET') $controller->ordersPage();
+    break;
     
 // 🔹 Orders para meseros
 case '/orders/waiter':
