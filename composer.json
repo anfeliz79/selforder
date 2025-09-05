@@ -1,0 +1,20 @@
+{
+    "name": "aneurysfeliz/selforder",
+    "description": "SelfOrder",
+    "type": "project",
+    "autoload": {
+        "psr-4": {
+         "App\\": "app/",
+                 "App\\Config\\": "config/"
+         
+        }
+    },
+    "authors": [
+        {
+            "name": "Aneurys Feliz"
+        }
+    ],
+    "require": {
+        "endroid/qr-code": "^6.0"
+    }
+}
