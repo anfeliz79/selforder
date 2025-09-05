@@ -66,8 +66,9 @@ class WaiterController {
 
     // 🔹 Logout
     public function logout() {
-        session_start();
-        session_destroy();
+        if (session_status() === PHP_SESSION_ACTIVE) {
+            session_destroy();
+        }
         header("Location: /waiter/login.php");
         exit;
     }
