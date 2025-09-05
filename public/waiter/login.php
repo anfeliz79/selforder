@@ -1,5 +1,14 @@
 <?php
-session_start();
+if (session_status() !== PHP_SESSION_ACTIVE) {
+    session_set_cookie_params([
+        'lifetime' => 0,
+        'path' => '/',
+        'secure' => isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off',
+        'httponly' => true,
+        'samesite' => 'Strict'
+    ]);
+    session_start();
+}
 $error = $_SESSION['error'] ?? null;
 $oldBranch = $_SESSION['old_branch'] ?? "";
 unset($_SESSION['error'], $_SESSION['old_branch']);

@@ -8,7 +8,14 @@ class WaiterController {
 
     public function __construct() {
         $this->branchModel = new Branch();
-        if (session_status() === PHP_SESSION_NONE) {
+        if (session_status() !== PHP_SESSION_ACTIVE) {
+            session_set_cookie_params([
+                'lifetime' => 0,
+                'path' => '/',
+                'secure' => isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off',
+                'httponly' => true,
+                'samesite' => 'Strict'
+            ]);
             session_start();
         }
     }
@@ -48,6 +55,7 @@ class WaiterController {
         }
 
         // Guardar sesión
+        session_regenerate_id(true);
         $_SESSION['branch_id']   = $branch['id'];
         $_SESSION['branch_name'] = $branch['name'];
 
@@ -66,7 +74,16 @@ class WaiterController {
 
     // 🔹 Logout
     public function logout() {
-        session_start();
+        if (session_status() !== PHP_SESSION_ACTIVE) {
+            session_set_cookie_params([
+                'lifetime' => 0,
+                'path' => '/',
+                'secure' => isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off',
+                'httponly' => true,
+                'samesite' => 'Strict'
+            ]);
+            session_start();
+        }
         session_destroy();
         header("Location: /waiter/login.php");
         exit;
