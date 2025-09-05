@@ -15,32 +15,41 @@ class Order {
 
     // ================== CREAR ==================
     public function create($data) {
-        $query = "INSERT INTO " . $this->table . " (branch_id, table_id, customer_id, status) 
-                  VALUES (:branch_id, :table_id, :customer_id, 'pendiente')";
-        $stmt = $this->conn->prepare($query);
-        $stmt->bindParam(":branch_id", $data['branch_id']);
-        $stmt->bindParam(":table_id", $data['table_id']);
-        $stmt->bindParam(":customer_id", $data['customer_id']);
-        $stmt->execute();
+        try {
+            $this->conn->beginTransaction();
 
-        $orderId = $this->conn->lastInsertId();
+            $query = "INSERT INTO " . $this->table . " (branch_id, table_id, customer_id, status)
+                      VALUES (:branch_id, :table_id, :customer_id, 'pendiente')";
+            $stmt = $this->conn->prepare($query);
+            $stmt->bindParam(":branch_id", $data['branch_id']);
+            $stmt->bindParam(":table_id", $data['table_id']);
+            $stmt->bindParam(":customer_id", $data['customer_id']);
+            $stmt->execute();
 
-        foreach ($data['items'] as $item) {
-            $q = "INSERT INTO order_details (order_id, product_id, variant_id, addons, quantity, price, status, comment)
-                  VALUES (:order_id, :product_id, :variant_id, :addons, :quantity, :price, 'pendiente', :comment)";
-            $s = $this->conn->prepare($q);
-            $s->bindParam(":order_id", $orderId);
-            $s->bindParam(":product_id", $item['product_id']);
-            $s->bindParam(":variant_id", $item['variant_id']);
-            $addons = json_encode($item['addons']);
-            $s->bindParam(":addons", $addons);
-            $s->bindParam(":quantity", $item['quantity']);
-            $s->bindParam(":price", $item['price']);
-            $s->bindParam(":comment", $item['comment']);
-            $s->execute();
+            $orderId = $this->conn->lastInsertId();
+
+            foreach ($data['items'] as $item) {
+                $q = "INSERT INTO order_details (order_id, product_id, variant_id, addons, quantity, price, status, comment)
+                      VALUES (:order_id, :product_id, :variant_id, :addons, :quantity, :price, 'pendiente', :comment)";
+                $s = $this->conn->prepare($q);
+                $s->bindParam(":order_id", $orderId);
+                $s->bindParam(":product_id", $item['product_id']);
+                $s->bindParam(":variant_id", $item['variant_id']);
+                $addons = json_encode($item['addons']);
+                $s->bindParam(":addons", $addons);
+                $s->bindParam(":quantity", $item['quantity']);
+                $s->bindParam(":price", $item['price']);
+                $s->bindParam(":comment", $item['comment']);
+                $s->execute();
+            }
+
+            $this->conn->commit();
+
+            return $orderId;
+        } catch (\Exception $e) {
+            $this->conn->rollBack();
+            throw $e;
         }
-
-        return $orderId;
     }
 
     // ================== CONSULTAS ==================

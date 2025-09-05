@@ -109,8 +109,13 @@ class OrderController {
             return;
         }
 
-        $orderId = $this->model->create($data);
-        echo json_encode(["message" => "Pedido creado", "order_id" => $orderId]);
+        try {
+            $orderId = $this->model->create($data);
+            echo json_encode(["message" => "Pedido creado", "order_id" => $orderId]);
+        } catch (\Exception $e) {
+            http_response_code(500);
+            echo json_encode(["error" => "Error al crear pedido"]);
+        }
     }
 
     // ================== ESTADOS ==================
