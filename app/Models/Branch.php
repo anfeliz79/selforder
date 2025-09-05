@@ -59,11 +59,19 @@ class Branch {
     }
 
     public function getById($id) {
-    $query = "SELECT * FROM " . $this->table . " WHERE id = :id";
-    $stmt = $this->conn->prepare($query);
-    $stmt->bindParam(":id", $id, PDO::PARAM_INT);
-    $stmt->execute();
-    return $stmt->fetch(PDO::FETCH_ASSOC);
-}
+        $query = "SELECT * FROM {$this->table} WHERE id = :id";
+        $stmt = $this->conn->prepare($query);
+        $stmt->bindParam(":id", $id, PDO::PARAM_INT);
+        $stmt->execute();
+        return $stmt->fetch(PDO::FETCH_ASSOC);
+    }
+
+    // Obtener sucursal por access_key (token)
+    public function getByAccessKey(string $token) {
+        $query = "SELECT * FROM {$this->table} WHERE access_key = :token LIMIT 1";
+        $stmt  = $this->conn->prepare($query);
+        $stmt->execute([':token' => $token]);
+        return $stmt->fetch(PDO::FETCH_ASSOC);
+    }
 
 }

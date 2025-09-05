@@ -2,12 +2,47 @@
 namespace App\Controllers;
 
 use App\Models\Order;
+use App\Models\Branch;
 
 class OrderController {
     private $model;
 
     public function __construct() {
+        if (session_status() === PHP_SESSION_NONE) {
+            session_start();
+        }
         $this->model = new Order();
+        $this->authenticate();
+    }
+
+    /**
+     * Verifica que la petición provenga de una sucursal válida.
+     * - Usa la sesión (branch_id) para peticiones de meseros
+     * - O un token Bearer que coincida con el access_key de la sucursal
+     * Si no se cumple, responde 401 y detiene la ejecución.
+     */
+    private function authenticate(): void {
+        if (!empty($_SESSION['branch_id'])) {
+            return; // Autenticado por sesión
+        }
+
+        $headers = function_exists('getallheaders') ? getallheaders() : [];
+        $authHeader = $headers['Authorization'] ?? $headers['authorization'] ?? '';
+        if (preg_match('/Bearer\s+(.*)$/i', $authHeader, $matches)) {
+            $token = trim($matches[1]);
+            $branchModel = new Branch();
+            $branch = $branchModel->getByAccessKey($token);
+            if ($branch) {
+                // Guardar en sesión para uso posterior
+                $_SESSION['branch_id'] = $branch['id'];
+                return;
+            }
+        }
+
+        http_response_code(401);
+        header('Content-Type: application/json');
+        echo json_encode(['error' => 'No autorizado']);
+        exit;
     }
 
     // ================== LISTADOS ==================
