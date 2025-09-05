@@ -10,7 +10,16 @@ class AuthController {
     public function __construct() {
         $db = new Database();
         $this->conn = $db->getConnection();
-        session_start();
+        if (session_status() !== PHP_SESSION_ACTIVE) {
+            session_set_cookie_params([
+                'lifetime' => 0,
+                'path' => '/',
+                'secure' => isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off',
+                'httponly' => true,
+                'samesite' => 'Strict'
+            ]);
+            session_start();
+        }
     }
 
     // POST /auth/login
@@ -26,6 +35,7 @@ class AuthController {
         $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
         if ($user && password_verify($password, $user['password'])) {
+            session_regenerate_id(true);
             $_SESSION['user'] = [
                 "id"=>$user['id'],
                 "username"=>$user['username'],

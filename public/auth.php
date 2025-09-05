@@ -1,5 +1,14 @@
 <?php
-session_start();
+if (session_status() !== PHP_SESSION_ACTIVE) {
+    session_set_cookie_params([
+        'lifetime' => 0,
+        'path' => '/',
+        'secure' => isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off',
+        'httponly' => true,
+        'samesite' => 'Strict'
+    ]);
+    session_start();
+}
 require __DIR__ . "/../vendor/autoload.php";
 
 use App\Config\Database;
@@ -25,6 +34,7 @@ if ($method === "POST") {
     $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
     if ($user && password_verify($password, $user['password'])) {
+        session_regenerate_id(true);
         $_SESSION['user'] = [
             "id" => $user['id'],
             "username" => $user['username'],
