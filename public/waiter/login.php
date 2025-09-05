@@ -5,6 +5,11 @@ $oldBranch = $_SESSION['old_branch'] ?? "";
 unset($_SESSION['error'], $_SESSION['old_branch']);
 
 require __DIR__ . "/../../vendor/autoload.php";
+use Dotenv\Dotenv;
+
+$dotenv = Dotenv::createImmutable(__DIR__ . '/../../');
+$dotenv->safeLoad();
+
 use App\Models\Branch;
 $branches = (new Branch())->getAll();
 ?>
