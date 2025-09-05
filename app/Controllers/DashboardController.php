@@ -21,16 +21,35 @@ public function index() {
         $start  = $_GET['start'] ?? null;
         $end    = $_GET['end'] ?? null;
 
-        $dateCondition = $this->getDateCondition($filter, $start, $end);
+        $validFilters = ['today', 'yesterday', 'week', 'month', 'last_month', 'year', 'custom'];
+        if (!in_array($filter, $validFilters, true)) {
+            $filter = 'today';
+        }
 
-        $branches    = (int) $this->conn->query("SELECT COUNT(*) FROM branches")->fetchColumn();
-        $products    = (int) $this->conn->query("SELECT COUNT(*) FROM products")->fetchColumn();
-        $customers   = (int) $this->conn->query("SELECT COUNT(*) FROM customers")->fetchColumn();
-        $orders      = (int) $this->conn->query("SELECT COUNT(*) FROM orders WHERE $dateCondition")->fetchColumn();
-        $totalIncome = (float) $this->conn->query("SELECT COALESCE(SUM(total),0) FROM orders WHERE $dateCondition")->fetchColumn();
+        [$dateCondition, $params] = $this->getDateCondition($filter, $start, $end);
+
+        $stmt = $this->conn->prepare("SELECT COUNT(*) FROM branches");
+        $stmt->execute();
+        $branches = (int) $stmt->fetchColumn();
+
+        $stmt = $this->conn->prepare("SELECT COUNT(*) FROM products");
+        $stmt->execute();
+        $products = (int) $stmt->fetchColumn();
+
+        $stmt = $this->conn->prepare("SELECT COUNT(*) FROM customers");
+        $stmt->execute();
+        $customers = (int) $stmt->fetchColumn();
+
+        $stmt = $this->conn->prepare("SELECT COUNT(*) FROM orders WHERE $dateCondition");
+        $stmt->execute($params);
+        $orders = (int) $stmt->fetchColumn();
+
+        $stmt = $this->conn->prepare("SELECT COALESCE(SUM(total),0) FROM orders WHERE $dateCondition");
+        $stmt->execute($params);
+        $totalIncome = (float) $stmt->fetchColumn();
 
         // Ventas por día
-        $stmt = $this->conn->query("
+        $stmt = $this->conn->prepare("
             SELECT DATE(created_at) as d,
                    COUNT(id) as orders,
                    SUM(total) as income
@@ -39,6 +58,7 @@ public function index() {
             GROUP BY DATE(created_at)
             ORDER BY d ASC
         ");
+        $stmt->execute($params);
         $sales = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
         if (!$sales) {
@@ -48,28 +68,30 @@ public function index() {
         }
 
         // Top productos
-        $stmt = $this->conn->query("
-            SELECT p.name, COUNT(od.id) as total 
-            FROM order_details od 
-            JOIN products p ON p.id=od.product_id 
-            JOIN orders o ON o.id=od.order_id 
+        $stmt = $this->conn->prepare("
+            SELECT p.name, COUNT(od.id) as total
+            FROM order_details od
+            JOIN products p ON p.id=od.product_id
+            JOIN orders o ON o.id=od.order_id
             WHERE $dateCondition
-            GROUP BY p.id 
-            ORDER BY total DESC 
+            GROUP BY p.id
+            ORDER BY total DESC
             LIMIT 5
         ");
+        $stmt->execute($params);
         $topProducts = $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
 
         // Top clientes
-        $stmt = $this->conn->query("
-            SELECT c.name, COUNT(o.id) as total 
-            FROM customers c 
-            JOIN orders o ON o.customer_id=c.id 
+        $stmt = $this->conn->prepare("
+            SELECT c.name, COUNT(o.id) as total
+            FROM customers c
+            JOIN orders o ON o.customer_id=c.id
             WHERE $dateCondition
-            GROUP BY c.id 
-            ORDER BY total DESC 
+            GROUP BY c.id
+            ORDER BY total DESC
             LIMIT 5
         ");
+        $stmt->execute($params);
         $topCustomers = $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
 
         echo json_encode([
@@ -108,17 +130,25 @@ public function index() {
 
     private function getDateCondition($filter, $start, $end) {
         switch ($filter) {
-            case "today": return "DATE(created_at)=CURDATE()";
-            case "yesterday": return "DATE(created_at)=CURDATE()-INTERVAL 1 DAY";
-            case "week": return "YEARWEEK(created_at)=YEARWEEK(CURDATE())";
-            case "month": return "YEAR(created_at)=YEAR(CURDATE()) AND MONTH(created_at)=MONTH(CURDATE())";
-            case "last_month": return "YEAR(created_at)=YEAR(CURDATE() - INTERVAL 1 MONTH) 
-                                       AND MONTH(created_at)=MONTH(CURDATE() - INTERVAL 1 MONTH)";
-            case "year": return "YEAR(created_at)=YEAR(CURDATE())";
+            case "today":
+                return ["DATE(created_at)=CURDATE()", []];
+            case "yesterday":
+                return ["DATE(created_at)=CURDATE()-INTERVAL 1 DAY", []];
+            case "week":
+                return ["YEARWEEK(created_at)=YEARWEEK(CURDATE())", []];
+            case "month":
+                return ["YEAR(created_at)=YEAR(CURDATE()) AND MONTH(created_at)=MONTH(CURDATE())", []];
+            case "last_month":
+                return ["YEAR(created_at)=YEAR(CURDATE() - INTERVAL 1 MONTH) AND MONTH(created_at)=MONTH(CURDATE() - INTERVAL 1 MONTH)", []];
+            case "year":
+                return ["YEAR(created_at)=YEAR(CURDATE())", []];
             case "custom":
-                if ($start && $end) return "DATE(created_at) BETWEEN '$start' AND '$end'";
-                return "1=1";
-            default: return "1=1";
+                if ($start && $end) {
+                    return ["DATE(created_at) BETWEEN :start AND :end", [':start' => $start, ':end' => $end]];
+                }
+                return ["1=1", []];
+            default:
+                return ["1=1", []];
         }
     }
 }
