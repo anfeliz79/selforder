@@ -36,7 +36,7 @@ class OrderController {
         echo json_encode(["data" => $orders]);
     }
 
-    // GET /orders/waiter?branch_id=1
+    // GET /orders/waiter?branch_id=1&status=pendiente
     public function waiter() {
         header('Content-Type: application/json');
 
@@ -46,9 +46,19 @@ class OrderController {
         }
 
         $branchId = intval($_GET['branch_id']);
-        // Solo estados activos
-        $statuses = ["pendiente","preparacion","listo"];
-        $orders = $this->model->getByBranch($branchId, $statuses);
+        $status   = $_GET['status'] ?? null;
+        if ($status === '') {
+            $status = null;
+        }
+
+        if ($status) {
+            $orders = $this->model->getByBranch($branchId, $status);
+        } else {
+            // Solo estados activos por defecto
+            $statuses = ["pendiente","preparacion","listo"];
+            $orders = $this->model->getByBranch($branchId, $statuses);
+        }
+
         echo json_encode(["data" => $orders]);
     }
 
