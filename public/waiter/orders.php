@@ -31,8 +31,6 @@ $branchName = $_SESSION['branch_name'];
     .status-pendiente { border-color: #6c757d; }
     .status-preparacion { border-color: #ffc107; }
     .status-listo { border-color: #0dcaf0; }
-    .status-entregado { border-color: #198754; opacity: .8; }
-    .status-cancelado { border-color: #dc3545; opacity: .7; }
     .btn-action { flex:1; font-size:14px; }
   </style>
 </head>
@@ -50,8 +48,6 @@ $branchName = $_SESSION['branch_name'];
       <option value="pendiente">Pendientes</option>
       <option value="preparacion">En preparación</option>
       <option value="listo">Listos</option>
-      <option value="entregado">Entregados</option>
-      <option value="cancelado">Cancelados</option>
     </select>
     <button class="btn btn-sm btn-secondary" onclick="loadOrders()">🔄</button>
   </div>
@@ -67,23 +63,22 @@ function renderStatusBadge(status) {
   const colors = {
     pendiente: "secondary",
     preparacion: "warning",
-    listo: "info",
-    entregado: "success",
-    cancelado: "danger"
+    listo: "info"
   };
   const labels = {
     pendiente: "Pendiente",
     preparacion: "En preparación",
-    listo: "Listo",
-    entregado: "Entregado",
-    cancelado: "Cancelado"
+    listo: "Listo"
   };
   return `<span class="badge bg-${colors[status]||'dark'}">${labels[status]||status}</span>`;
 }
 
 function loadOrders() {
   const status = document.getElementById("filterStatus").value;
-  fetch(`/orders?branch_id=${branchId}&status=${status}`)
+  const url = new URL(`/orders/waiter`, window.location.origin);
+  url.searchParams.set('branch_id', branchId);
+  if (status) url.searchParams.set('status', status);
+  fetch(url)
     .then(r=>r.json())
     .then(res=>{
       const list = document.getElementById("ordersList");
@@ -116,13 +111,11 @@ function loadOrders() {
 }
 
 function renderButtons(order) {
-  const s = order.status;
-  if (s === "cancelado" || s === "entregado") return "";
   const next = {
     pendiente: "preparacion",
     preparacion: "listo",
     listo: "entregado"
-  }[s] || null;
+  }[order.status] || null;
 
   let btns = "";
   if (next) {
