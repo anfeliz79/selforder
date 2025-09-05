@@ -39,6 +39,7 @@ class ProductController {
 
         // Imagen
         $imagePath = null;
+        $target = null;
         if (!empty($_FILES['image']['name'])) {
             if ($_FILES['image']['size'] > 2 * 1024 * 1024) { // 2 MB
                 http_response_code(400);
@@ -46,23 +47,51 @@ class ProductController {
                 return;
             }
 
+            $allowedTypes = [
+                'image/jpeg' => 'jpg',
+                'image/png'  => 'png',
+                'image/gif'  => 'gif'
+            ];
+
+            $finfo    = finfo_open(FILEINFO_MIME_TYPE);
+            $mimeType = finfo_file($finfo, $_FILES['image']['tmp_name']);
+            finfo_close($finfo);
+            if (!isset($allowedTypes[$mimeType])) {
+                http_response_code(400);
+                echo json_encode(["error" => "Tipo de imagen no permitido"]);
+                return;
+            }
+
             $uploadDir = __DIR__ . "/../../public/uploads/products/";
             if (!is_dir($uploadDir)) mkdir($uploadDir, 0777, true);
 
-            $filename = time() . "_" . basename($_FILES["image"]["name"]);
-            $target = $uploadDir . $filename;
-            if (move_uploaded_file($_FILES["image"]["tmp_name"], $target)) {
-                $imagePath = "/uploads/products/" . $filename;
+            $filename = bin2hex(random_bytes(16)) . '.' . $allowedTypes[$mimeType];
+            $target   = $uploadDir . $filename;
+            if (!move_uploaded_file($_FILES['image']['tmp_name'], $target)) {
+                http_response_code(500);
+                echo json_encode(["error" => "Error al guardar la imagen"]);
+                return;
             }
+            $imagePath = "/uploads/products/" . $filename;
         }
 
-        $id = $this->model->create([
-            "name"        => $data['name'],
-            "description" => $data['description'] ?? '',
-            "image"       => $imagePath,
-            "base_price"  => $data['base_price'],
-            "category"    => $data['category'] ?? ''
-        ]);
+        try {
+            $id = $this->model->create([
+                "name"        => $data['name'],
+                "description" => $data['description'] ?? '',
+                "image"       => $imagePath,
+                "base_price"  => $data['base_price'],
+                "category"    => $data['category'] ?? ''
+            ]);
+        } catch (\Throwable $e) {
+            if ($target && file_exists($target)) unlink($target); // evita huérfanos
+            http_response_code(500);
+            echo json_encode([
+                "error" => "Error al crear producto",
+                "details" => $e->getMessage()
+            ]);
+            return;
+        }
 
         if (!empty($data['branches'])) $this->model->saveBranches($id, json_decode($data['branches'], true));
         if (!empty($data['variants'])) $this->model->saveVariants($id, json_decode($data['variants'], true));
@@ -83,6 +112,7 @@ class ProductController {
 
         // Imagen (nueva o conservar actual)
         $imagePath = $data['current_image'] ?? null;
+        $target = null;
         if (!empty($_FILES['image']['name'])) {
             if ($_FILES['image']['size'] > 2 * 1024 * 1024) {
                 http_response_code(400);
@@ -90,24 +120,52 @@ class ProductController {
                 return;
             }
 
+            $allowedTypes = [
+                'image/jpeg' => 'jpg',
+                'image/png'  => 'png',
+                'image/gif'  => 'gif'
+            ];
+
+            $finfo    = finfo_open(FILEINFO_MIME_TYPE);
+            $mimeType = finfo_file($finfo, $_FILES['image']['tmp_name']);
+            finfo_close($finfo);
+            if (!isset($allowedTypes[$mimeType])) {
+                http_response_code(400);
+                echo json_encode(["error" => "Tipo de imagen no permitido"]);
+                return;
+            }
+
             $uploadDir = __DIR__ . "/../../public/uploads/products/";
             if (!is_dir($uploadDir)) mkdir($uploadDir, 0777, true);
 
-            $filename = time() . "_" . basename($_FILES["image"]["name"]);
-            $target = $uploadDir . $filename;
-            if (move_uploaded_file($_FILES["image"]["tmp_name"], $target)) {
-                $imagePath = "/uploads/products/" . $filename;
+            $filename = bin2hex(random_bytes(16)) . '.' . $allowedTypes[$mimeType];
+            $target   = $uploadDir . $filename;
+            if (!move_uploaded_file($_FILES['image']['tmp_name'], $target)) {
+                http_response_code(500);
+                echo json_encode(["error" => "Error al guardar la imagen"]);
+                return;
             }
+            $imagePath = "/uploads/products/" . $filename;
         }
 
-        $this->model->update([
-            "id"          => $id,
-            "name"        => $data['name'],
-            "description" => $data['description'] ?? '',
-            "image"       => $imagePath,
-            "base_price"  => $data['base_price'],
-            "category"    => $data['category'] ?? ''
-        ]);
+        try {
+            $this->model->update([
+                "id"          => $id,
+                "name"        => $data['name'],
+                "description" => $data['description'] ?? '',
+                "image"       => $imagePath,
+                "base_price"  => $data['base_price'],
+                "category"    => $data['category'] ?? ''
+            ]);
+        } catch (\Throwable $e) {
+            if ($target && file_exists($target)) unlink($target);
+            http_response_code(500);
+            echo json_encode([
+                "error" => "Error al actualizar producto",
+                "details" => $e->getMessage()
+            ]);
+            return;
+        }
 
         if (!empty($data['branches'])) $this->model->saveBranches($id, json_decode($data['branches'], true));
         if (!empty($data['variants'])) $this->model->saveVariants($id, json_decode($data['variants'], true));
