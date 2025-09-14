@@ -12,8 +12,15 @@ class Product {
         $this->conn = $db->getConnection();
     }
 
+    private function ensureConnection() {
+        if ($this->conn === null) {
+            throw new \Exception('Conexión a la base de datos no establecida');
+        }
+    }
+
     // Listar productos
     public function getAll() {
+        $this->ensureConnection();
         $sql = "SELECT id, name, description, image, base_price, category, created_at
                 FROM products
                 ORDER BY created_at DESC";
@@ -29,6 +36,7 @@ class Product {
     }
 
     public function getById($id) {
+        $this->ensureConnection();
         $sql = "SELECT id, name, description, image, base_price, category, created_at
                 FROM products
                 WHERE id = :id";
@@ -46,7 +54,8 @@ class Product {
 
     // Crear producto
     public function create($data) {
-        $stmt = $this->conn->prepare("INSERT INTO products (name, description, image, base_price, category) 
+        $this->ensureConnection();
+        $stmt = $this->conn->prepare("INSERT INTO products (name, description, image, base_price, category)
                                       VALUES (:name,:description,:image,:base_price,:category)");
         $stmt->execute([
             ":name" => $data['name'],
@@ -60,8 +69,9 @@ class Product {
 
     // Actualizar producto
     public function update($data) {
-        $stmt = $this->conn->prepare("UPDATE products SET 
-            name=:name, description=:description, image=:image, base_price=:base_price, category=:category 
+        $this->ensureConnection();
+        $stmt = $this->conn->prepare("UPDATE products SET
+            name=:name, description=:description, image=:image, base_price=:base_price, category=:category
             WHERE id=:id");
         return $stmt->execute([
             ":id" => $data['id'],
@@ -74,22 +84,25 @@ class Product {
     }
 
     public function delete($id) {
+        $this->ensureConnection();
         $stmt = $this->conn->prepare("DELETE FROM products WHERE id=:id");
         return $stmt->execute([":id"=>$id]);
     }
 
     // -------- Relaciones ----------
     public function getBranches($productId) {
+        $this->ensureConnection();
         $stmt = $this->conn->prepare("SELECT * FROM product_branch WHERE product_id=:pid");
         $stmt->execute([":pid"=>$productId]);
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
     public function saveBranches($productId, $branches) {
+        $this->ensureConnection();
         $this->conn->prepare("DELETE FROM product_branch WHERE product_id=:pid")->execute([":pid"=>$productId]);
         foreach ($branches as $b) {
             $stmt = $this->conn->prepare(
-                "INSERT INTO product_branch (product_id, branch_id, custom_price) 
+                "INSERT INTO product_branch (product_id, branch_id, custom_price)
                  VALUES (:pid,:bid,:price)"
             );
             $stmt->execute([
@@ -102,8 +115,9 @@ class Product {
 
     // Variantes (solo activas)
     public function getVariants($productId) {
-        $stmt = $this->conn->prepare("SELECT id, name, price 
-                                      FROM product_variants 
+        $this->ensureConnection();
+        $stmt = $this->conn->prepare("SELECT id, name, price
+                                      FROM product_variants
                                       WHERE product_id=:pid AND is_active=1");
         $stmt->execute([":pid"=>$productId]);
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -111,6 +125,7 @@ class Product {
 
     // Soft delete de variantes
     public function saveVariants($productId, $variants) {
+        $this->ensureConnection();
         // 🔹 Paso 1: marcar todas las variantes existentes como inactivas
         $this->conn->prepare("UPDATE product_variants SET is_active=0 WHERE product_id=:pid")
                    ->execute([":pid"=>$productId]);
@@ -145,15 +160,17 @@ class Product {
         }
     }
 
-public function getAddons($productId) {
-    $stmt = $this->conn->prepare("SELECT id, name, price 
-                                  FROM product_addons 
+    public function getAddons($productId) {
+    $this->ensureConnection();
+    $stmt = $this->conn->prepare("SELECT id, name, price
+                                  FROM product_addons
                                   WHERE product_id=:pid AND is_active=1");
     $stmt->execute([":pid"=>$productId]);
     return $stmt->fetchAll(PDO::FETCH_ASSOC);
 }
 
 public function saveAddons($productId, $addons) {
+    $this->ensureConnection();
     // 🔹 Primero, desactivar todos los addons actuales
     $this->conn->prepare("UPDATE product_addons SET is_active = 0 WHERE product_id=:pid")
                ->execute([":pid"=>$productId]);
@@ -190,6 +207,7 @@ public function saveAddons($productId, $addons) {
 
     // 🔹 Devolver solo nombres de categorías
     public function getCategories() {
+        $this->ensureConnection();
         $stmt = $this->conn->query("SELECT name FROM categories ORDER BY name ASC");
         return $stmt->fetchAll(PDO::FETCH_COLUMN); // ["Bebidas","Comidas",...]
     }

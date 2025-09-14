@@ -13,9 +13,16 @@ class Order {
         $this->conn = $database->getConnection();
     }
 
+    private function ensureConnection() {
+        if ($this->conn === null) {
+            throw new \Exception('Conexión a la base de datos no establecida');
+        }
+    }
+
     // ================== CREAR ==================
     public function create($data) {
-        $query = "INSERT INTO " . $this->table . " (branch_id, table_id, customer_id, status) 
+        $this->ensureConnection();
+        $query = "INSERT INTO " . $this->table . " (branch_id, table_id, customer_id, status)
                   VALUES (:branch_id, :table_id, :customer_id, 'pendiente')";
         $stmt = $this->conn->prepare($query);
         $stmt->bindParam(":branch_id", $data['branch_id']);
@@ -47,6 +54,7 @@ class Order {
 
     // 📌 General por sucursal (puede filtrar por status único o array)
     public function getByBranch($branchId, $status = null) {
+        $this->ensureConnection();
         $query = "
             SELECT o.id, o.table_id, o.customer_id, o.status, o.created_at,
                    c.name as customer_name, c.phone as customer_phone,
@@ -87,6 +95,7 @@ class Order {
 
     // 📌 Detalle único
     public function getById($id) {
+        $this->ensureConnection();
         $q = "
             SELECT o.id, o.branch_id, o.table_id, o.customer_id, o.status, o.created_at,
                    c.name as customer_name, c.phone as customer_phone,
@@ -109,6 +118,7 @@ class Order {
     }
 
     private function getDetails($orderId) {
+        $this->ensureConnection();
         $q = "
             SELECT od.id, od.product_id, p.name as product_name,
                    od.variant_id, v.name as variant_name,
@@ -131,17 +141,19 @@ class Order {
     // ================== ESTADOS ==================
 
     public function updateStatus($orderId, $status) {
+        $this->ensureConnection();
         $query = "UPDATE " . $this->table . " SET status = :status WHERE id = :id";
         $stmt = $this->conn->prepare($query);
         return $stmt->execute([":status"=>$status, ":id"=>$orderId]);
     }
 
     public function cancelItem($detailId, $customerId) {
+        $this->ensureConnection();
         $query = "UPDATE order_details od
                   JOIN orders o ON od.order_id = o.id
                   SET od.status = 'cancelado'
-                  WHERE od.id = :detail_id 
-                    AND o.customer_id = :customer_id 
+                  WHERE od.id = :detail_id
+                    AND o.customer_id = :customer_id
                     AND od.status = 'pendiente'";
         $stmt = $this->conn->prepare($query);
         return $stmt->execute([":detail_id"=>$detailId, ":customer_id"=>$customerId]);
