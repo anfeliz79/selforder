@@ -12,6 +12,11 @@ use App\Controllers\DashboardController;
 use App\Controllers\WaiterController;
 
 $uri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
+$base = rtrim(dirname($_SERVER['SCRIPT_NAME']), '/');
+if ($base !== '' && $base !== '/' && strpos($uri, $base) === 0) {
+    $uri = substr($uri, strlen($base));
+}
+$uri = $uri === '' ? '/' : $uri;
 $method = $_SERVER['REQUEST_METHOD'];
 
 switch ($uri) {
