@@ -2,7 +2,7 @@
 namespace App\Controllers;
 
 use App\Models\Branch;
-use Exception;
+use Throwable;
 
 class BranchController {
     private $model;
@@ -17,7 +17,7 @@ class BranchController {
         try {
             $branches = $this->model->getAll();
             echo json_encode(["data" => $branches]);
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
             http_response_code(500);
             echo json_encode(["error" => $e->getMessage()]);
         }
@@ -36,7 +36,7 @@ class BranchController {
         try {
             $success = $this->model->create($data['name'], $data['address'], $data['phone'], $data['access_key']);
             echo json_encode(["success"=>$success, "message"=>"Sucursal creada correctamente"]);
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
             http_response_code(500);
             echo json_encode(["success"=>false, "error"=>$e->getMessage()]);
         }
@@ -55,7 +55,7 @@ class BranchController {
         try {
             $success = $this->model->update($data['id'], $data['name'], $data['address'], $data['phone'], $data['access_key']);
             echo json_encode(["success"=>$success, "message"=>"Sucursal actualizada correctamente"]);
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
             http_response_code(500);
             echo json_encode(["success"=>false, "error"=>$e->getMessage()]);
         }
@@ -74,7 +74,7 @@ class BranchController {
         try {
             $success = $this->model->delete($id);
             echo json_encode(["success"=>$success, "message"=>"Sucursal eliminada correctamente"]);
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
             http_response_code(500);
             echo json_encode(["success"=>false, "error"=>$e->getMessage()]);
         }

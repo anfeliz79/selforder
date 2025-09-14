@@ -13,7 +13,14 @@ class Setting {
         $this->conn = $db->getConnection();
     }
 
+    private function ensureConnection() {
+        if ($this->conn === null) {
+            throw new \Exception('Conexión a la base de datos no establecida');
+        }
+    }
+
     public function get() {
+        $this->ensureConnection();
         $q = "SELECT * FROM " . $this->table . " ORDER BY id DESC LIMIT 1";
         $stmt = $this->conn->prepare($q);
         $stmt->execute();

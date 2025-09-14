@@ -13,10 +13,17 @@ class Branch {
         $this->conn = $database->getConnection();
     }
 
+    private function ensureConnection() {
+        if ($this->conn === null) {
+            throw new \Exception('Conexión a la base de datos no establecida');
+        }
+    }
+
     // Obtener todas las sucursales
     public function getAll() {
-        $query = "SELECT id, name, address, phone, access_key 
-                  FROM {$this->table} 
+        $this->ensureConnection();
+        $query = "SELECT id, name, address, phone, access_key
+                  FROM {$this->table}
                   ORDER BY name ASC";
         $stmt = $this->conn->prepare($query);
         $stmt->execute();
@@ -25,7 +32,8 @@ class Branch {
 
     // Crear sucursal
     public function create($name, $address, $phone, $accessKey) {
-        $query = "INSERT INTO {$this->table} (name, address, phone, access_key) 
+        $this->ensureConnection();
+        $query = "INSERT INTO {$this->table} (name, address, phone, access_key)
                   VALUES (:name, :address, :phone, :access_key)";
         $stmt = $this->conn->prepare($query);
         return $stmt->execute([
@@ -38,8 +46,9 @@ class Branch {
 
     // Actualizar sucursal
     public function update($id, $name, $address, $phone, $accessKey) {
-        $query = "UPDATE {$this->table} 
-                  SET name = :name, address = :address, phone = :phone, access_key = :access_key 
+        $this->ensureConnection();
+        $query = "UPDATE {$this->table}
+                  SET name = :name, address = :address, phone = :phone, access_key = :access_key
                   WHERE id = :id";
         $stmt = $this->conn->prepare($query);
         return $stmt->execute([
@@ -53,17 +62,19 @@ class Branch {
 
     // Eliminar sucursal
     public function delete($id) {
+        $this->ensureConnection();
         $query = "DELETE FROM {$this->table} WHERE id = :id";
         $stmt = $this->conn->prepare($query);
         return $stmt->execute([":id" => $id]);
     }
 
     public function getById($id) {
-    $query = "SELECT * FROM " . $this->table . " WHERE id = :id";
-    $stmt = $this->conn->prepare($query);
-    $stmt->bindParam(":id", $id, PDO::PARAM_INT);
-    $stmt->execute();
-    return $stmt->fetch(PDO::FETCH_ASSOC);
-}
+        $this->ensureConnection();
+        $query = "SELECT * FROM " . $this->table . " WHERE id = :id";
+        $stmt = $this->conn->prepare($query);
+        $stmt->bindParam(":id", $id, PDO::PARAM_INT);
+        $stmt->execute();
+        return $stmt->fetch(PDO::FETCH_ASSOC);
+    }
 
 }
