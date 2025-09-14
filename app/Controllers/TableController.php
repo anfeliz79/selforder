@@ -143,8 +143,9 @@ public function index() {
     private function generateQrFile($branchId, $tableNumber) {
         // Construir la URL base
         $protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? "https" : "http";
-        $host = $_SERVER['HTTP_HOST']; 
-        $baseUrl = $protocol . "://" . $host;
+        $host = $_SERVER['HTTP_HOST'];
+        $basePath = rtrim(dirname($_SERVER['SCRIPT_NAME']), '/');
+        $baseUrl = $protocol . "://" . $host . $basePath;
 
         // Contenido del QR
         $qrContent = $baseUrl . "/order?sucursal={$branchId}&mesa={$tableNumber}";
